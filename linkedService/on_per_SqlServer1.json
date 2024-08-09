@@ -1,0 +1,21 @@
+{
+	"name": "on_per_SqlServer1",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"server": "DESKTOP-R0PPSCF\\SQLEXPRESS",
+			"database": "DataEngineer",
+			"encrypt": "mandatory",
+			"trustServerCertificate": true,
+			"authenticationType": "SQL",
+			"userName": "balaji",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIwMDFlZGQwZS02ZmIyLTRiYTItOGUxNy04NTIzYWMyMjVjMWQiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "selfhost",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

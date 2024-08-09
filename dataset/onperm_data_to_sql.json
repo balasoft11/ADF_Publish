@@ -1,0 +1,36 @@
+{
+	"name": "onperm_data_to_sql",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "on_per_SqlServer1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": [
+			{
+				"name": "ID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "NAME",
+				"type": "varchar"
+			},
+			{
+				"name": "AGE",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "ADDRESS",
+				"type": "char"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "STUDENTS"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

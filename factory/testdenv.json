@@ -1,0 +1,17 @@
+{
+	"name": "testdenv",
+	"properties": {
+		"globalParameters": {
+			"adlsaccountUrl": {
+				"type": "string",
+				"value": " https://schmdevforingtiondl.dfs.core.windows.net/"
+			}
+		}
+	},
+	"location": "southindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "fd14b9aa-2262-4bdf-a160-3e043b3bc4af",
+		"tenantId": "966c898a-ee61-467c-9d93-33c19c58be3b"
+	}
+}
