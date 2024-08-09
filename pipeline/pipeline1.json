@@ -1,0 +1,156 @@
+{
+	"name": "pipeline1",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "acc",
+					"value": {
+						"value": "@pipeline().globalParameters.adlsaccountUrl",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Copy data1",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Set variable1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "dscsvparameterized",
+						"type": "DatasetReference",
+						"parameters": {
+							"containername": {
+								"value": "@pipeline().parameters.sourcecontaner",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@pipeline().parameters.sourcefilename",
+								"type": "Expression"
+							},
+							"directoryname": {
+								"value": "@pipeline().parameters.sourcedirectory",
+								"type": "Expression"
+							},
+							"accurl": {
+								"value": "@pipeline().globalParameters.adlsaccountUrl",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "dscsvparameterized",
+						"type": "DatasetReference",
+						"parameters": {
+							"containername": {
+								"value": "@pipeline().parameters.targetcontainer",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@pipeline().parameters.targetfilename",
+								"type": "Expression"
+							},
+							"directoryname": {
+								"value": "@pipeline().parameters.targetdirectory",
+								"type": "Expression"
+							},
+							"accurl": {
+								"value": "@pipeline().globalParameters.adlsaccountUrl",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"account": {
+				"type": "string"
+			},
+			"sourcecontaner": {
+				"type": "string"
+			},
+			"sourcedirectory": {
+				"type": "string"
+			},
+			"sourcefilename": {
+				"type": "string"
+			},
+			"targetcontainer": {
+				"type": "string"
+			},
+			"targetdirectory": {
+				"type": "string"
+			},
+			"targetfilename": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"acc": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2024-08-06T02:19:33Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

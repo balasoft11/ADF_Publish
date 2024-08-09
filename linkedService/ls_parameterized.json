@@ -1,0 +1,17 @@
+{
+	"name": "ls_parameterized",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"parameters": {
+			"accountUrl": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "@{linkedService().accountUrl}",
+			"encryptedCredential": "ew0KICAiVmVyc2lvbiI6ICIyMDE3LTExLTMwIiwNCiAgIlByb3RlY3Rpb25Nb2RlIjogIktleSIsDQogICJTZWNyZXRDb250ZW50VHlwZSI6ICJQbGFpbnRleHQiLA0KICAiQ3JlZGVudGlhbElkIjogIkRBVEFGQUNUT1JZQDZBQ0IzRjc3LTI1NzUtNEM5QS1BOTQ1LTU3MjdFMDY4NEI4NF82ZWM0MDdjNC1jNzlkLTQ2YjYtYmQ3Ni1lYTVhZmE3MWY2OGIiDQp9"
+		}
+	}
+}

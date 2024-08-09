@@ -1,0 +1,27 @@
+{
+	"name": "adlstoblobdatamovingtarget",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "dstargetadls",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "Adlstoblob"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "employees.csv",
+				"fileSystem": "test1"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": ""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
