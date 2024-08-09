@@ -1,0 +1,24 @@
+{
+	"name": "todataadls",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "todataadls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "food.csv",
+				"folderPath": "test1",
+				"fileSystem": "test1"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": ""
+		},
+		"schema": []
+	}
+}
