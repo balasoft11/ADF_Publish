@@ -1,0 +1,383 @@
+{
+	"name": "PL_Ingestion_bronze",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get Metadata",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "Set Begin DateTime",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Get Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "LoadBeginDate",
+					"value": {
+						"value": "@formatDateTime(utcNow())",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEach",
+				"description": "To iterate the files ",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Set Begin DateTime",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Metadata').output.childItems",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Set Begin Date",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "LoadBeginDate",
+								"value": {
+									"value": "@formatDateTime(utcNow())",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Copy data",
+							"description": "Copy data from source to destination",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Set Begin Date",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false
+							}
+						},
+						{
+							"name": "Set load End Date on Begin Date Failure",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Set Begin Date",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "Load End Date",
+								"value": {
+									"value": "@formatDateTime(utcNow())",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Set Load End Date on Success",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Copy data",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "Load End Date",
+								"value": {
+									"value": "@formatDateTime(utcNow())",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Set Load End Date on failure",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Copy data",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "Load End Date",
+								"value": {
+									"value": "@formatDateTime(utcNow())",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Wait",
+							"description": "Wait for 30 seconds and update the Error",
+							"type": "Wait",
+							"dependsOn": [
+								{
+									"activity": "Set load End Date on Begin Date Failure",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 1
+							}
+						},
+						{
+							"name": "Stored procedure on success",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Set Load End Date on Success",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[Audit_Table_Sp]",
+								"storedProcedureParameters": {
+									"file_name": {
+										"value": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Layer": {
+										"value": {
+											"value": "Bronze_Layer",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"load_Begin_Td": {
+										"value": {
+											"value": "@variables('LoadBeginDate')",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Load_End_Td": {
+										"value": {
+											"value": "@variables('Load End Date')",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Message": {
+										"value": {
+											"value": "Success",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Pipeline_Name": {
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							}
+						},
+						{
+							"name": "Stored procedure on failure",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Set Load End Date on failure",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "Wait",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[Audit_Table_Sp]",
+								"storedProcedureParameters": {
+									"file_name": {
+										"value": {
+											"value": "@item().name",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Layer": {
+										"value": {
+											"value": "Bronze_Layer",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"load_Begin_Td": {
+										"value": {
+											"value": "@variables('LoadBeginDate')",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Load_End_Td": {
+										"value": {
+											"value": "@variables('Load End Date')",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Message": {
+										"value": {
+											"value": "Failed",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Pipeline_Name": {
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"LoadBeginDate": {
+				"type": "String"
+			},
+			"Load End Date": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-02-18T02:14:06Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
