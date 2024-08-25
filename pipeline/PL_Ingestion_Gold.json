@@ -1,81 +1,22 @@
 {
-	"name": "PL_Ingestion_bronze",
+	"name": "PL_Ingestion_Gold",
 	"properties": {
 		"activities": [
 			{
-				"name": "Get Metadata",
-				"type": "GetMetadata",
-				"dependsOn": [],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"fieldList": [],
-					"storeSettings": {
-						"type": "AzureBlobFSReadSettings",
-						"recursive": true,
-						"enablePartitionDiscovery": false
-					},
-					"formatSettings": {
-						"type": "DelimitedTextReadSettings"
-					}
-				}
-			},
-			{
-				"name": "Set Begin DateTime",
-				"type": "SetVariable",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
-				"dependsOn": [
-					{
-						"activity": "Get Metadata",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"policy": {
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"variableName": "LoadBeginDate",
-					"value": {
-						"value": "@formatDateTime(utcNow())",
-						"type": "Expression"
-					}
-				}
-			},
-			{
 				"name": "ForEach",
-				"description": "To iterate the files ",
+				"description": "To iterate the filenames",
 				"type": "ForEach",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
-				"dependsOn": [
-					{
-						"activity": "Set Begin DateTime",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
+				"dependsOn": [],
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('Get Metadata').output.childItems",
+						"value": "@pipeline().parameters.Filenames",
 						"type": "Expression"
 					},
 					"isSequential": true,
 					"activities": [
 						{
-							"name": "Set Begin Date",
+							"name": "Set Load Begin Date",
 							"type": "SetVariable",
 							"dependsOn": [],
 							"policy": {
@@ -84,7 +25,7 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"variableName": "LoadBeginDate",
+								"variableName": "loadBeginDate",
 								"value": {
 									"value": "@formatDateTime(utcNow())",
 									"type": "Expression"
@@ -92,12 +33,11 @@
 							}
 						},
 						{
-							"name": "Copy data",
-							"description": "Copy data from source to destination",
-							"type": "Copy",
+							"name": "Notebook1",
+							"type": "DatabricksNotebook",
 							"dependsOn": [
 								{
-									"activity": "Set Begin Date",
+									"activity": "Set Load Begin Date",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -112,61 +52,24 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"source": {
-									"type": "DelimitedTextSource",
-									"storeSettings": {
-										"type": "AzureBlobFSReadSettings",
-										"recursive": true,
-										"enablePartitionDiscovery": false
-									},
-									"formatSettings": {
-										"type": "DelimitedTextReadSettings"
-									}
-								},
-								"sink": {
-									"type": "DelimitedTextSink",
-									"storeSettings": {
-										"type": "AzureBlobFSWriteSettings"
-									},
-									"formatSettings": {
-										"type": "DelimitedTextWriteSettings",
-										"quoteAllText": true,
-										"fileExtension": ".txt"
-									}
-								},
-								"enableStaging": false
-							}
-						},
-						{
-							"name": "Set load End Date on Begin Date Failure",
-							"type": "SetVariable",
-							"dependsOn": [
-								{
-									"activity": "Set Begin Date",
-									"dependencyConditions": [
-										"Failed"
-									]
-								}
-							],
-							"policy": {
-								"secureOutput": false,
-								"secureInput": false
-							},
-							"userProperties": [],
-							"typeProperties": {
-								"variableName": "Load End Date",
-								"value": {
-									"value": "@formatDateTime(utcNow())",
+								"notebookPath": {
+									"value": "@concat('/Shared/Project1/Silver/',item())",
 									"type": "Expression"
+								},
+								"baseParameters": {
+									"file_name": {
+										"value": "@concat(item(),'.csv')",
+										"type": "Expression"
+									}
 								}
 							}
 						},
 						{
-							"name": "Set Load End Date on Success",
+							"name": "Set End Date on Success",
 							"type": "SetVariable",
 							"dependsOn": [
 								{
-									"activity": "Copy data",
+									"activity": "Notebook1",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -186,11 +89,11 @@
 							}
 						},
 						{
-							"name": "Set Load End Date on failure",
+							"name": "Set End Date on failure",
 							"type": "SetVariable",
 							"dependsOn": [
 								{
-									"activity": "Copy data",
+									"activity": "Notebook1",
 									"dependencyConditions": [
 										"Failed"
 									]
@@ -210,28 +113,11 @@
 							}
 						},
 						{
-							"name": "Wait",
-							"description": "Wait for 30 seconds and update the Error",
-							"type": "Wait",
-							"dependsOn": [
-								{
-									"activity": "Set load End Date on Begin Date Failure",
-									"dependencyConditions": [
-										"Succeeded"
-									]
-								}
-							],
-							"userProperties": [],
-							"typeProperties": {
-								"waitTimeInSeconds": 1
-							}
-						},
-						{
-							"name": "Stored procedure on success",
+							"name": "Stored procedure update on Success",
 							"type": "SqlServerStoredProcedure",
 							"dependsOn": [
 								{
-									"activity": "Set Load End Date on Success",
+									"activity": "Set End Date on Success",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -250,21 +136,21 @@
 								"storedProcedureParameters": {
 									"file_name": {
 										"value": {
-											"value": "@item().name",
+											"value": "@concat(item(),'.csv')",
 											"type": "Expression"
 										},
 										"type": "String"
 									},
 									"Layer": {
 										"value": {
-											"value": "Bronze_Layer",
+											"value": "Gold_Layer",
 											"type": "Expression"
 										},
 										"type": "String"
 									},
 									"load_Begin_Td": {
 										"value": {
-											"value": "@variables('LoadBeginDate')",
+											"value": "@variables('loadBeginDate')",
 											"type": "Expression"
 										},
 										"type": "String"
@@ -294,17 +180,11 @@
 							}
 						},
 						{
-							"name": "Stored procedure on failure",
+							"name": "Stored procedure update on Failure",
 							"type": "SqlServerStoredProcedure",
 							"dependsOn": [
 								{
-									"activity": "Set Load End Date on failure",
-									"dependencyConditions": [
-										"Succeeded"
-									]
-								},
-								{
-									"activity": "Wait",
+									"activity": "Set End Date on failure",
 									"dependencyConditions": [
 										"Succeeded"
 									]
@@ -323,21 +203,21 @@
 								"storedProcedureParameters": {
 									"file_name": {
 										"value": {
-											"value": "@item().name",
+											"value": "@concat(item(),'.csv')",
 											"type": "Expression"
 										},
 										"type": "String"
 									},
 									"Layer": {
 										"value": {
-											"value": "Bronze_Layer",
+											"value": "Gold_Layer",
 											"type": "Expression"
 										},
 										"type": "String"
 									},
 									"load_Begin_Td": {
 										"value": {
-											"value": "@variables('LoadBeginDate')",
+											"value": "@variables('loadBeginDate')",
 											"type": "Expression"
 										},
 										"type": "String"
@@ -351,7 +231,7 @@
 									},
 									"Message": {
 										"value": {
-											"value": "Failed",
+											"value": "'Failed in Gold Layer'",
 											"type": "Expression"
 										},
 										"type": "String"
@@ -370,8 +250,22 @@
 				}
 			}
 		],
+		"parameters": {
+			"Filenames": {
+				"type": "array",
+				"defaultValue": [
+					"OrderList",
+					"FreightRates",
+					"PlantPorts",
+					"ProductsPerPlant",
+					"WhCost",
+					"WhCapacities",
+					"VmiCustomers"
+				]
+			}
+		},
 		"variables": {
-			"LoadBeginDate": {
+			"loadBeginDate": {
 				"type": "String"
 			},
 			"Load End Date": {
@@ -382,7 +276,7 @@
 			"name": "project"
 		},
 		"annotations": [],
-		"lastPublishTime": "2023-02-18T02:14:06Z"
+		"lastPublishTime": "2023-02-25T14:36:58Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }
